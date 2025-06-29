@@ -1,0 +1,225 @@
+--- Training Configuration ---
+{
+    "batch_size": 64,
+    "epochs": 75,
+    "learning_rate": 0.0001,
+    "unet_in_channels": 4,
+    "unet_out_channels": 4,
+    "num_timesteps": 1000,
+    "n_mels": 128,
+    "cut_secs": 10,
+    "text_model_id": "openai/clip-vit-base-patch32",
+    "data_subset_percent": 1.0,
+    "autoencoder_path": "GAN_runs/20250618_134104/autoencoder.pth",
+    "datashare_root": "MusicBench/datashare",
+    "save_dir": "UNet_runs"
+}
+
+--- AE Architecture ---
+Autoencoder(
+  (encoder): Sequential(
+    (0): Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ResnetBlockAE(
+      (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (2): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    (3): ResnetBlockAE(
+      (norm1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (4): Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+    (5): ResnetBlockAE(
+      (norm1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (6): Conv2d(256, 4, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  )
+  (decoder): Sequential(
+    (0): Conv2d(4, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): ResnetBlockAE(
+      (norm1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (2): Upsample(scale_factor=2.0, mode='nearest')
+    (3): Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (4): ResnetBlockAE(
+      (norm1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (5): Upsample(scale_factor=2.0, mode='nearest')
+    (6): Conv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (7): ResnetBlockAE(
+      (norm1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (norm2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (nin_shortcut): Identity()
+      (silu): SiLU()
+    )
+    (8): Upsample(scale_factor=2.0, mode='nearest')
+    (9): Conv2d(64, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (10): Sigmoid()
+  )
+)
+
+--- UNet Architecture ---
+ConditionedUNet(
+  (time_mlp): Sequential(
+    (0): SinusoidalPositionalEmbeddings()
+    (1): Linear(in_features=128, out_features=512, bias=True)
+    (2): SiLU()
+    (3): Linear(in_features=512, out_features=128, bias=True)
+  )
+  (init_conv): Conv2d(4, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (down1): UNetDownBlock(
+    (res): ResnetBlockUNet(
+      (mlp): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=256, bias=True)
+      )
+      (block1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (block2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (res_conv): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1))
+      (norm1): GroupNorm(8, 128, eps=1e-05, affine=True)
+      (norm2): GroupNorm(8, 128, eps=1e-05, affine=True)
+    )
+    (attn): CrossAttention(
+      (to_q): Linear(in_features=128, out_features=128, bias=False)
+      (to_k): Linear(in_features=512, out_features=128, bias=False)
+      (to_v): Linear(in_features=512, out_features=128, bias=False)
+      (to_out): Linear(in_features=128, out_features=128, bias=True)
+    )
+    (downsample): Conv2d(128, 128, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+  )
+  (down2): UNetDownBlock(
+    (res): ResnetBlockUNet(
+      (mlp): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=512, bias=True)
+      )
+      (block1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (block2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (res_conv): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1))
+      (norm1): GroupNorm(8, 256, eps=1e-05, affine=True)
+      (norm2): GroupNorm(8, 256, eps=1e-05, affine=True)
+    )
+    (attn): CrossAttention(
+      (to_q): Linear(in_features=256, out_features=256, bias=False)
+      (to_k): Linear(in_features=512, out_features=256, bias=False)
+      (to_v): Linear(in_features=512, out_features=256, bias=False)
+      (to_out): Linear(in_features=256, out_features=256, bias=True)
+    )
+    (downsample): Conv2d(256, 256, kernel_size=(4, 4), stride=(2, 2), padding=(1, 1))
+  )
+  (bot_res1): ResnetBlockUNet(
+    (mlp): Sequential(
+      (0): SiLU()
+      (1): Linear(in_features=128, out_features=1024, bias=True)
+    )
+    (block1): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (block2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (res_conv): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1))
+    (norm1): GroupNorm(8, 512, eps=1e-05, affine=True)
+    (norm2): GroupNorm(8, 512, eps=1e-05, affine=True)
+  )
+  (bot_attn): CrossAttention(
+    (to_q): Linear(in_features=512, out_features=512, bias=False)
+    (to_k): Linear(in_features=512, out_features=512, bias=False)
+    (to_v): Linear(in_features=512, out_features=512, bias=False)
+    (to_out): Linear(in_features=512, out_features=512, bias=True)
+  )
+  (bot_res2): ResnetBlockUNet(
+    (mlp): Sequential(
+      (0): SiLU()
+      (1): Linear(in_features=128, out_features=1024, bias=True)
+    )
+    (block1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (block2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (res_conv): Identity()
+    (norm1): GroupNorm(8, 512, eps=1e-05, affine=True)
+    (norm2): GroupNorm(8, 512, eps=1e-05, affine=True)
+  )
+  (up1): UNetUpBlock(
+    (res): ResnetBlockUNet(
+      (mlp): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=512, bias=True)
+      )
+      (block1): Conv2d(768, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (block2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (res_conv): Conv2d(768, 256, kernel_size=(1, 1), stride=(1, 1))
+      (norm1): GroupNorm(8, 256, eps=1e-05, affine=True)
+      (norm2): GroupNorm(8, 256, eps=1e-05, affine=True)
+    )
+    (attn): CrossAttention(
+      (to_q): Linear(in_features=256, out_features=256, bias=False)
+      (to_k): Linear(in_features=512, out_features=256, bias=False)
+      (to_v): Linear(in_features=512, out_features=256, bias=False)
+      (to_out): Linear(in_features=256, out_features=256, bias=True)
+    )
+  )
+  (up2): UNetUpBlock(
+    (res): ResnetBlockUNet(
+      (mlp): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=256, bias=True)
+      )
+      (block1): Conv2d(384, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (block2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (res_conv): Conv2d(384, 128, kernel_size=(1, 1), stride=(1, 1))
+      (norm1): GroupNorm(8, 128, eps=1e-05, affine=True)
+      (norm2): GroupNorm(8, 128, eps=1e-05, affine=True)
+    )
+    (attn): CrossAttention(
+      (to_q): Linear(in_features=128, out_features=128, bias=False)
+      (to_k): Linear(in_features=512, out_features=128, bias=False)
+      (to_v): Linear(in_features=512, out_features=128, bias=False)
+      (to_out): Linear(in_features=128, out_features=128, bias=True)
+    )
+  )
+  (up3): UNetUpBlock(
+    (res): ResnetBlockUNet(
+      (mlp): Sequential(
+        (0): SiLU()
+        (1): Linear(in_features=128, out_features=128, bias=True)
+      )
+      (block1): Conv2d(192, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (block2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (res_conv): Conv2d(192, 64, kernel_size=(1, 1), stride=(1, 1))
+      (norm1): GroupNorm(8, 64, eps=1e-05, affine=True)
+      (norm2): GroupNorm(8, 64, eps=1e-05, affine=True)
+    )
+    (attn): CrossAttention(
+      (to_q): Linear(in_features=64, out_features=64, bias=False)
+      (to_k): Linear(in_features=512, out_features=64, bias=False)
+      (to_v): Linear(in_features=512, out_features=64, bias=False)
+      (to_out): Linear(in_features=64, out_features=64, bias=True)
+    )
+  )
+  (output_conv): Sequential(
+    (0): GroupNorm(8, 64, eps=1e-05, affine=True)
+    (1): SiLU()
+    (2): Conv2d(64, 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  )
+)
